@@ -1,0 +1,427 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VFR Timer Planner</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #18212f;
+      --muted: #647084;
+      --line: #d7dde7;
+      --panel: #ffffff;
+      --page: #f4f6f9;
+      --accent: #0b6bcb;
+      --accent-dark: #084f97;
+      --danger: #b42318;
+      --success: #147a4d;
+      --shadow: 0 18px 50px rgba(21, 33, 52, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--page);
+      color: var(--ink);
+    }
+
+    main {
+      width: min(980px, calc(100% - 28px));
+      margin: 28px auto;
+    }
+
+    .shell {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    header {
+      display: flex;
+      gap: 18px;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding: 22px;
+      border-bottom: 1px solid var(--line);
+      background: #fbfcfe;
+    }
+
+    h1 {
+      margin: 0 0 6px;
+      font-size: clamp(1.35rem, 2vw, 1.9rem);
+      letter-spacing: 0;
+    }
+
+    p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .total-box {
+      min-width: 172px;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #ffffff;
+      text-align: right;
+    }
+
+    .total-box span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .total-box strong {
+      display: block;
+      margin-top: 4px;
+      font-size: 2rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 16px 22px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    button {
+      border: 1px solid transparent;
+      border-radius: 6px;
+      min-height: 42px;
+      padding: 0 14px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      background: var(--accent);
+      color: #fff;
+    }
+
+    button:hover {
+      background: var(--accent-dark);
+    }
+
+    button.secondary {
+      background: #fff;
+      color: var(--ink);
+      border-color: var(--line);
+    }
+
+    button.secondary:hover {
+      background: #edf2f7;
+    }
+
+    button.danger {
+      background: #fff;
+      color: var(--danger);
+      border-color: #f0c4bf;
+    }
+
+    button.danger:hover {
+      background: #fff1ef;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+
+    th,
+    td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: middle;
+    }
+
+    th {
+      color: var(--muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      background: #fbfcfe;
+    }
+
+    th:nth-child(1) {
+      width: 44px;
+    }
+
+    th:nth-child(2) {
+      width: 36%;
+    }
+
+    th:nth-child(3),
+    th:nth-child(4) {
+      width: 22%;
+    }
+
+    th:nth-child(5) {
+      width: 84px;
+    }
+
+    input {
+      width: 100%;
+      min-height: 40px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 8px 10px;
+      font: inherit;
+      color: var(--ink);
+      background: #fff;
+    }
+
+    input:focus {
+      outline: 3px solid rgba(11, 107, 203, 0.16);
+      border-color: var(--accent);
+    }
+
+    input.invalid {
+      border-color: var(--danger);
+      background: #fff8f7;
+    }
+
+    .num,
+    .time {
+      font-variant-numeric: tabular-nums;
+    }
+
+    .num {
+      color: var(--muted);
+      text-align: right;
+    }
+
+    .time {
+      font-size: 1.2rem;
+      font-weight: 800;
+    }
+
+    .valid {
+      color: var(--success);
+    }
+
+    .remove {
+      width: 42px;
+      min-height: 38px;
+      padding: 0;
+      font-size: 1.2rem;
+      line-height: 1;
+    }
+
+    .status {
+      min-height: 42px;
+      padding: 12px 22px;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .status.error {
+      color: var(--danger);
+      background: #fff8f7;
+    }
+
+    @media (max-width: 700px) {
+      main {
+        width: calc(100% - 18px);
+        margin: 9px auto;
+      }
+
+      header {
+        display: block;
+        padding: 18px;
+      }
+
+      .total-box {
+        margin-top: 16px;
+        text-align: left;
+      }
+
+      .controls {
+        padding: 14px 18px;
+      }
+
+      button {
+        flex: 1 1 140px;
+      }
+
+      table {
+        min-width: 680px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="shell" aria-labelledby="app-title">
+      <header>
+        <div>
+          <h1 id="app-title">VFR Timer Planner</h1>
+          <p>Enter each leg's ETE as minutes and seconds, such as 2:30 or 1:30. The timer column shows what your total elapsed timer should read.</p>
+        </div>
+        <div class="total-box" aria-live="polite">
+          <span>Total Time</span>
+          <strong id="grandTotal">0:00</strong>
+        </div>
+      </header>
+
+      <div class="controls">
+        <button type="button" id="addRow">+ Add leg</button>
+        <button type="button" class="secondary" id="copyResults">Copy timer column</button>
+        <button type="button" class="danger" id="clearRows">Clear</button>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Checkpoint</th>
+              <th>ETE</th>
+              <th>Timer should read</th>
+              <th>Remove</th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+
+      <div class="status" id="status" aria-live="polite">Ready.</div>
+    </section>
+  </main>
+
+  <template id="rowTemplate">
+    <tr>
+      <td class="num"></td>
+      <td><input class="checkpoint" type="text" placeholder="Checkpoint"></td>
+      <td><input class="ete" type="text" inputmode="numeric" placeholder="m:ss"></td>
+      <td class="time">0:00</td>
+      <td><button type="button" class="danger remove" title="Remove leg" aria-label="Remove leg">&times;</button></td>
+    </tr>
+  </template>
+
+  <script>
+    const rows = document.querySelector("#rows");
+    const rowTemplate = document.querySelector("#rowTemplate");
+    const grandTotal = document.querySelector("#grandTotal");
+    const status = document.querySelector("#status");
+    const addRowButton = document.querySelector("#addRow");
+    const clearRowsButton = document.querySelector("#clearRows");
+    const copyResultsButton = document.querySelector("#copyResults");
+
+    function parseDuration(value) {
+      const text = value.trim();
+      if (!text) return { seconds: 0, valid: true, empty: true };
+
+      const match = text.match(/^(\d+)(?::([0-5]?\d))?$/);
+      if (!match) return { seconds: 0, valid: false, empty: false };
+
+      const minutes = Number(match[1]);
+      const seconds = match[2] === undefined ? 0 : Number(match[2]);
+      return { seconds: minutes * 60 + seconds, valid: true, empty: false };
+    }
+
+    function formatDuration(totalSeconds) {
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = totalSeconds % 60;
+      return `${minutes}:${String(seconds).padStart(2, "0")}`;
+    }
+
+    function updateTotals() {
+      let runningTotal = 0;
+      let hasError = false;
+
+      [...rows.children].forEach((row, index) => {
+        const eteInput = row.querySelector(".ete");
+        const timeCell = row.querySelector(".time");
+        const rowNumber = row.querySelector(".num");
+        const parsed = parseDuration(eteInput.value);
+
+        rowNumber.textContent = index + 1;
+        eteInput.classList.toggle("invalid", !parsed.valid);
+
+        if (parsed.valid) {
+          runningTotal += parsed.seconds;
+          timeCell.textContent = formatDuration(runningTotal);
+          timeCell.classList.add("valid");
+        } else {
+          hasError = true;
+          timeCell.textContent = "--";
+          timeCell.classList.remove("valid");
+        }
+      });
+
+      grandTotal.textContent = formatDuration(runningTotal);
+      status.classList.toggle("error", hasError);
+      status.textContent = hasError
+        ? "Use minutes:seconds with seconds from 00 to 59, for example 2:30."
+        : "Ready.";
+    }
+
+    function addRow(checkpoint = "", ete = "") {
+      const fragment = rowTemplate.content.cloneNode(true);
+      const row = fragment.querySelector("tr");
+      row.querySelector(".checkpoint").value = checkpoint;
+      row.querySelector(".ete").value = ete;
+      rows.appendChild(fragment);
+      updateTotals();
+      row.querySelector(".checkpoint").focus();
+    }
+
+    function clearRows() {
+      rows.textContent = "";
+      addRow("", "");
+      updateTotals();
+    }
+
+    async function copyResults() {
+      const lines = [...rows.children].map((row, index) => {
+        const checkpoint = row.querySelector(".checkpoint").value.trim() || `Leg ${index + 1}`;
+        const ete = row.querySelector(".ete").value.trim() || "0:00";
+        const timer = row.querySelector(".time").textContent;
+        return `${index + 1}. ${checkpoint} | ETE ${ete} | Timer ${timer}`;
+      });
+
+      try {
+        await navigator.clipboard.writeText(lines.join("\n"));
+        status.classList.remove("error");
+        status.textContent = "Timer column copied.";
+      } catch (error) {
+        status.classList.add("error");
+        status.textContent = "Copy was blocked by the browser. Select the rows and copy manually.";
+      }
+    }
+
+    addRowButton.addEventListener("click", () => addRow());
+    clearRowsButton.addEventListener("click", clearRows);
+    copyResultsButton.addEventListener("click", copyResults);
+
+    rows.addEventListener("input", updateTotals);
+    rows.addEventListener("click", (event) => {
+      if (!event.target.classList.contains("remove")) return;
+      event.target.closest("tr").remove();
+      if (rows.children.length === 0) addRow();
+      updateTotals();
+    });
+
+    addRow("Start to checkpoint 1", "2:30");
+    addRow("Checkpoint 1 to checkpoint 2", "1:30");
+  </script>
+</body>
+</html>
